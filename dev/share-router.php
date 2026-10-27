@@ -7,9 +7,9 @@
  *   php -S 127.0.0.1:8099 -t /Applications/MAMP/htdocs/booking dev/share-router.php
  */
 $routes = [
-    '/'                => '/popup.php',
-    '/popup.php'       => '/popup.php',
-    '/index.php'       => '/index.php',
+    '/'                => '/index.html',
+    '/index.html'      => '/index.html',
+    '/onepage.html'    => '/onepage.html',
     '/api/nearest.php' => '/api/nearest.php',
 ];
 
@@ -20,5 +20,11 @@ if (!isset($routes[$path])) {
     return true;
 }
 
-require dirname(__DIR__) . $routes[$path];
+$file = dirname(__DIR__) . $routes[$path];
+if (str_ends_with($file, '.html')) {
+    header('Content-Type: text/html; charset=utf-8');
+    readfile($file);
+} else {
+    require $file;
+}
 return true;

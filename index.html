@@ -1,10 +1,9 @@
-<?php $debug = !empty($_GET['debug']); ?>
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Book a Table – Maki &amp; Ramen (popup)</title>
+<title>Book a Table – Maki &amp; Ramen</title>
 <style>
   :root { --ink: #1c1c1c; --muted: #666; --accent: #c8102e; --accent-dark: #a00d25; --line: #e3e3e3; --bg: #fafafa; }
   * { box-sizing: border-box; }
@@ -110,7 +109,7 @@
 
 <script>
 (function () {
-  const DEBUG = <?= $debug ? 'true' : 'false' ?>;
+  const DEBUG = ['', '0', null].indexOf(new URLSearchParams(location.search).get('debug')) === -1;
   const API = 'api/nearest.php';
   const REDIRECT_DELAY_MS = 2000;
   const PROMPT_IGNORED_MS = 8000;

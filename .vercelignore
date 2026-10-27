@@ -1,0 +1,8 @@
+# PHP files are for MAMP / WordPress only — Vercel would serve them as plain text
+*.php
+lib/
+dev/
+screenshots/
+*.xlsx
+*.xls
+*.csv

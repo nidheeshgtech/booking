@@ -1,4 +1,3 @@
-<?php $debug = !empty($_GET['debug']); ?>
 <!doctype html>
 <html lang="en">
 <head>
@@ -54,7 +53,7 @@
 
 <script>
 (function () {
-  const DEBUG = <?= $debug ? 'true' : 'false' ?>;
+  const DEBUG = ['', '0', null].indexOf(new URLSearchParams(location.search).get('debug')) === -1;
   const API = 'api/nearest.php';
   const REDIRECT_DELAY_MS = 1500;
   const PROMPT_IGNORED_MS = 8000;

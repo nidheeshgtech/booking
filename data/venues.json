@@ -1,0 +1,138 @@
+[
+    {
+        "name": "Birmingham (New Street)",
+        "address": "King Edward House, 134B New Street, Birmingham, B2 4NS",
+        "provider": "Dojo",
+        "lat": 52.478707,
+        "lng": -1.896922,
+        "booking_url": "https://www.makiramen.com/our-venues/birmingham/"
+    },
+    {
+        "name": "Edinburgh Fountainbridge",
+        "address": "97-101 Fountainbridge, Edinburgh, EH3 9QG",
+        "provider": "Walkup",
+        "lat": 55.944085,
+        "lng": -3.206472,
+        "booking_url": "https://www.makiramen.com/our-venues/edinburgh/fountainbridge-2/"
+    },
+    {
+        "name": "Glasgow Byres Road",
+        "address": "130-132 Byres Road, Glasgow, G12 8TD",
+        "provider": "Dojo",
+        "lat": 55.873604,
+        "lng": -4.295302,
+        "booking_url": "https://www.makiramen.com/our-venues/glasgow/byres-road/"
+    },
+    {
+        "name": "Glasgow Renfield Street",
+        "address": "90 Renfield Street, Glasgow, G2 1NH",
+        "provider": "Walkup",
+        "lat": 55.86386,
+        "lng": -4.25559,
+        "booking_url": "https://www.makiramen.com/our-venues/glasgow/renfield/"
+    },
+    {
+        "name": "Aberdeen Union Square",
+        "address": "Union Square, Guild Street, Aberdeen, AB11 5RG",
+        "provider": "Dojo",
+        "lat": 57.144354,
+        "lng": -2.096083,
+        "booking_url": "https://www.makiramen.com/our-venues/aberdeen/"
+    },
+    {
+        "name": "London Lakeside",
+        "address": "Unit 2, West Thurrock Way, West Thurrock, Grays, RM20 2ZN",
+        "provider": "Dojo",
+        "lat": 51.487166,
+        "lng": 0.281448,
+        "booking_url": "https://www.makiramen.com/our-venues/london/lakeside/"
+    },
+    {
+        "name": "London Shoreditch",
+        "address": "80 City Road, London, EC1Y 2BJ",
+        "provider": "Dojo",
+        "lat": 51.524938,
+        "lng": -0.087832,
+        "booking_url": "https://www.makiramen.com/our-venues/shoreditch/"
+    },
+    {
+        "name": "London Soho",
+        "address": "9 Old Compton Street, London, W1D 5JF",
+        "provider": "Dojo",
+        "lat": 51.513653,
+        "lng": -0.129875,
+        "booking_url": "https://www.makiramen.com/our-venues/soho/"
+    },
+    {
+        "name": "Leeds",
+        "address": "32 Bond Street, Leeds, LS1 5BQ",
+        "provider": "Dojo",
+        "lat": 53.797604,
+        "lng": -1.546019,
+        "booking_url": "https://www.makiramen.com/our-venues/leeds/"
+    },
+    {
+        "name": "Leicester Highcross",
+        "address": "Highcross, 12 Highcross Lane, Leicester, LE1 4SA",
+        "provider": "Dojo",
+        "lat": 52.636844,
+        "lng": -1.138652,
+        "booking_url": "https://www.makiramen.com/leicester-highcross/"
+    },
+    {
+        "name": "Manchester Northern Quarter",
+        "address": "The Landmark, 78-88 High Street, Manchester, M4 1ES",
+        "provider": "Dojo",
+        "lat": 53.484178,
+        "lng": -2.237502,
+        "booking_url": "https://www.makiramen.com/our-venues/manchester-northern-quarter/"
+    },
+    {
+        "name": "Manchester York Street",
+        "address": "11 York Street, Manchester, M2 2AW",
+        "provider": "Walkup",
+        "lat": 53.481107,
+        "lng": -2.240775,
+        "booking_url": "https://www.makiramen.com/our-venues/manchester/"
+    },
+    {
+        "name": "Metrocentre Gateshead",
+        "address": "Unit 1, 131 Metrocentre, Gateshead, NE11 9YG",
+        "provider": "Dojo",
+        "lat": 54.955888,
+        "lng": -1.668941,
+        "booking_url": "https://www.makiramen.com/our-venues/metrocentre-gateshead/"
+    },
+    {
+        "name": "Newcastle Eldon Square",
+        "address": "8 Eldon Square, Newcastle upon Tyne, NE1 7XG",
+        "provider": "Dojo",
+        "lat": 54.974426,
+        "lng": -1.614654,
+        "booking_url": "https://www.makiramen.com/our-venues/newcastle-eldon-square/"
+    },
+    {
+        "name": "Nottingham",
+        "address": "18 King Street, Nottingham, NG1 2AS",
+        "provider": "Dojo",
+        "lat": 52.954528,
+        "lng": -1.149285,
+        "booking_url": "https://www.makiramen.com/our-venues/nottingham/"
+    },
+    {
+        "name": "Sheffield Meadowhall",
+        "address": "Meadowhall Centre, The Oasis Unit 67, Sheffield, S9 1EP",
+        "provider": "Dojo",
+        "lat": 53.414085,
+        "lng": -1.412793,
+        "booking_url": "https://www.makiramen.com/our-venues/meadowhall-sheffield/"
+    },
+    {
+        "name": "Southampton Westquay",
+        "address": "Westquay, Harbour Parade, Southampton, SO15 1QE",
+        "provider": "Dojo",
+        "lat": 50.903317,
+        "lng": -1.407518,
+        "booking_url": "https://www.makiramen.com/our-venues/southampton/"
+    }
+]
