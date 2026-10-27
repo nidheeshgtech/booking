@@ -1,5 +1,14 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    { "source": "/booking/popup.php", "destination": "/", "permanent": false },
+    { "source": "/booking/index.php", "destination": "/", "permanent": false },
+    { "source": "/booking", "destination": "/", "permanent": false },
+    { "source": "/booking/", "destination": "/", "permanent": false },
+    { "source": "/booking/:path*", "destination": "/:path*", "permanent": false },
+    { "source": "/popup.php", "destination": "/", "permanent": false },
+    { "source": "/index.php", "destination": "/", "permanent": false }
+  ],
   "rewrites": [
     { "source": "/api/nearest.php", "destination": "/api/nearest" }
   ],
