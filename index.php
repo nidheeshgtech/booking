@@ -1,0 +1,211 @@
+<?php $debug = !empty($_GET['debug']); ?>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Book a Table – Maki &amp; Ramen</title>
+<style>
+  :root { --ink: #1c1c1c; --muted: #666; --accent: #c8102e; --line: #e3e3e3; --bg: #fafafa; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); }
+  main { max-width: 480px; margin: 0 auto; padding: 48px 16px; text-align: center; }
+  h1 { font-size: 1.6rem; margin: 0 0 8px; }
+  p { margin: 0 0 16px; color: var(--muted); }
+  .btn { display: inline-block; border: 0; border-radius: 6px; padding: 14px 28px; font: inherit; font-weight: 600; cursor: pointer; background: var(--accent); color: #fff; text-decoration: none; }
+  .btn:disabled { opacity: .6; cursor: default; }
+  .btn-full { width: 100%; }
+  #panel { margin-top: 28px; padding: 20px; background: #fff; border: 1px solid var(--line); border-radius: 8px; text-align: left; }
+  #status { margin: 0 0 12px; color: var(--ink); }
+  #status.error { color: var(--accent); }
+  form { display: flex; gap: 8px; }
+  input { flex: 1; min-width: 0; padding: 12px; font: inherit; border: 1px solid var(--line); border-radius: 6px; text-transform: uppercase; }
+  form .btn { padding: 12px 18px; }
+  .label { display: block; font-size: .9rem; color: var(--muted); margin-bottom: 6px; }
+  .result strong { display: block; font-size: 1.15rem; }
+  .result small { color: var(--muted); }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -2px; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: .85rem; }
+  td, th { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: left; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Book a table</h1>
+  <p>We'll find the Maki &amp; Ramen closest to you.</p>
+  <button id="book-now" class="btn">Book Now</button>
+
+  <section id="panel" hidden aria-live="polite">
+    <p id="status"></p>
+    <div id="result" class="result" hidden></div>
+
+    <div id="postcode-box" hidden>
+      <label class="label" for="postcode">Or enter your postcode</label>
+      <form id="postcode-form" novalidate>
+        <input id="postcode" name="postcode" autocomplete="postal-code" inputmode="text" placeholder="e.g. M4 1ES" maxlength="10">
+        <button class="btn" type="submit">Find</button>
+      </form>
+    </div>
+    <div id="debug"></div>
+  </section>
+</main>
+
+<script>
+(function () {
+  const DEBUG = <?= $debug ? 'true' : 'false' ?>;
+  const API = 'api/nearest.php';
+  const REDIRECT_DELAY_MS = 1500;
+  const PROMPT_IGNORED_MS = 8000;
+  const UK_POSTCODE = /^[A-Z]{1,2}[0-9][A-Z0-9]?\s*([0-9][A-Z]{2})?$/i;
+
+  const el = (id) => document.getElementById(id);
+  const bookBtn = el('book-now'), panel = el('panel'), status = el('status'),
+        result = el('result'), pcBox = el('postcode-box'), pcForm = el('postcode-form'),
+        pcInput = el('postcode'), debugBox = el('debug');
+  let busy = false;
+  let geoToken = 0;
+
+  function setStatus(text, { error = false, loading = false } = {}) {
+    status.className = error ? 'error' : '';
+    status.textContent = '';
+    if (loading) {
+      const s = document.createElement('span');
+      s.className = 'spinner';
+      status.appendChild(s);
+    }
+    status.appendChild(document.createTextNode(text));
+  }
+
+  function showPostcode(focus) {
+    pcBox.hidden = false;
+    if (focus) pcInput.focus();
+  }
+
+  bookBtn.addEventListener('click', function () {
+    panel.hidden = false;
+    result.hidden = true;
+    debugBox.textContent = '';
+    showPostcode(false); // always offer manual entry, so "skip" is possible
+
+    if (!('geolocation' in navigator) || !window.isSecureContext) {
+      setStatus('Location is not available in this browser. Please enter your postcode.');
+      showPostcode(true);
+      return;
+    }
+
+    setStatus('Finding your location…', { loading: true });
+    const token = ++geoToken;
+    // The browser's own timeout only starts after permission is granted, so if the
+    // user ignores the prompt nothing ever fires. Nudge them to the postcode box.
+    const ignoredHint = setTimeout(() => {
+      if (token !== geoToken) return;
+      setStatus('Waiting for location permission… or enter your postcode below.');
+      showPostcode(true);
+    }, PROMPT_IGNORED_MS);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        clearTimeout(ignoredHint);
+        if (token !== geoToken) return; // user already went the postcode route
+        lookup({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      },
+      (err) => {
+        clearTimeout(ignoredHint);
+        if (token !== geoToken) return;
+        const msg = err.code === err.PERMISSION_DENIED
+          ? 'Location access was blocked. Please enter your postcode instead.'
+          : "We couldn't get your location. Please enter your postcode instead.";
+        setStatus(msg, { error: true });
+        showPostcode(true);
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+    );
+  });
+
+  pcForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    geoToken++; // drop any late geolocation answer
+    const pc = pcInput.value.trim();
+    if (!UK_POSTCODE.test(pc)) {
+      setStatus("That doesn't look like a UK postcode. Try e.g. M4 1ES.", { error: true });
+      pcInput.focus();
+      return;
+    }
+    lookup({ postcode: pc });
+  });
+
+  async function lookup(params) {
+    if (busy) return;
+    busy = true;
+    setStatus('Finding your nearest restaurant…', { loading: true });
+    if (DEBUG) params.debug = 1;
+
+    try {
+      const res = await fetch(API + '?' + new URLSearchParams(params), { headers: { Accept: 'application/json' } });
+      const data = await res.json();
+      if (!data.ok) {
+        setStatus(data.message || 'Something went wrong. Please try again.', { error: true });
+        showPostcode(true);
+        return;
+      }
+      showVenue(data);
+    } catch (e) {
+      setStatus('Network problem. Please check your connection and try again.', { error: true });
+      showPostcode(true);
+    } finally {
+      busy = false;
+    }
+  }
+
+  function showVenue(data) {
+    const v = data.venue;
+    pcBox.hidden = true;
+    setStatus(DEBUG ? 'Debug mode – not redirecting.' : 'Taking you to booking…', { loading: !DEBUG });
+
+    result.textContent = '';
+    const name = document.createElement('strong');
+    name.textContent = v.name;
+    const meta = document.createElement('small');
+    meta.textContent = v.address + ' · ' + v.distance_miles.toFixed(1) + ' miles from ' + data.origin.label;
+    const go = document.createElement('a');
+    go.className = 'btn btn-full';
+    go.style.marginTop = '14px';
+    go.href = v.booking_url;
+    go.textContent = 'Continue to booking';
+    result.append(name, meta, go);
+    result.hidden = false;
+
+    if (data.skipped.length) {
+      const note = document.createElement('p');
+      note.style.marginTop = '12px';
+      note.textContent = 'Closer venue(s) without online booking: ' + data.skipped.join(', ');
+      result.appendChild(note);
+    }
+
+    if (DEBUG) {
+      renderDebug(data);
+    } else {
+      setTimeout(() => window.location.assign(v.booking_url), REDIRECT_DELAY_MS);
+    }
+  }
+
+  function renderDebug(data) {
+    const t = document.createElement('table');
+    t.innerHTML = '<tr><th>#</th><th>Venue</th><th>Miles</th><th>URL</th></tr>';
+    data.ranked.forEach((r, i) => {
+      const tr = t.insertRow();
+      [i + 1, r.name, r.distance_miles.toFixed(1), r.bookable ? '✓' : '✗'].forEach((c) => {
+        tr.insertCell().textContent = c;
+      });
+    });
+    const o = document.createElement('p');
+    o.style.marginTop = '12px';
+    o.textContent = 'Origin: ' + data.origin.source + ' ' + data.origin.lat.toFixed(5) + ', ' + data.origin.lng.toFixed(5);
+    debugBox.append(o, t);
+  }
+})();
+</script>
+</body>
+</html>

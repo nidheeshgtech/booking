@@ -1,0 +1,6 @@
+# Client documents (quotation, survey, source data) — keep out of the repo
+*.xlsx
+*.xls
+*.csv
+.DS_Store
+.playwright-mcp/

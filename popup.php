@@ -1,0 +1,300 @@
+<?php $debug = !empty($_GET['debug']); ?>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Book a Table – Maki &amp; Ramen (popup)</title>
+<style>
+  :root { --ink: #1c1c1c; --muted: #666; --accent: #c8102e; --accent-dark: #a00d25; --line: #e3e3e3; --bg: #fafafa; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); }
+  main { max-width: 560px; margin: 0 auto; padding: 72px 16px; text-align: center; }
+  h1 { font-size: 1.8rem; margin: 0 0 8px; }
+  main > p { margin: 0 0 24px; color: var(--muted); }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 8px; padding: 14px 28px; font: inherit; font-weight: 600; cursor: pointer; background: var(--accent); color: #fff; text-decoration: none; }
+  .btn:hover { background: var(--accent-dark); }
+  .btn-full { width: 100%; }
+  .link { background: none; border: 0; padding: 4px; font: inherit; font-size: .95rem; color: var(--muted); text-decoration: underline; cursor: pointer; }
+  .link:hover { color: var(--ink); }
+
+  /* Popup: centred card on desktop, bottom sheet on phones */
+  dialog { width: min(420px, calc(100% - 32px)); padding: 0; border: 0; border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.25); color: var(--ink); }
+  dialog::backdrop { background: rgba(0,0,0,.45); }
+  dialog[open] { animation: pop .18s ease-out; }
+  @keyframes pop { from { opacity: 0; transform: scale(.96); } }
+  @media (max-width: 600px) {
+    dialog { width: 100%; max-width: 100%; margin: auto 0 0; border-radius: 16px 16px 0 0; }
+    dialog[open] { animation: slide-up .22s ease-out; }
+    @keyframes slide-up { from { transform: translateY(100%); } }
+  }
+  .sheet { position: relative; padding: 28px 24px 24px; }
+  .close { position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: none; font-size: 22px; line-height: 1; color: var(--muted); cursor: pointer; }
+  .close:hover { background: #f0f0f0; }
+  .step { text-align: center; }
+  .step h2 { font-size: 1.25rem; margin: 0 0 6px; }
+  .step p { margin: 0 0 20px; color: var(--muted); }
+  .stack { display: grid; gap: 12px; justify-items: center; }
+
+  form { display: flex; gap: 8px; margin-bottom: 12px; }
+  input { flex: 1; min-width: 0; padding: 13px 12px; font: inherit; font-size: 16px; /* stops iOS zoom */ border: 1px solid var(--line); border-radius: 8px; text-transform: uppercase; }
+  input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .msg { min-height: 1.5em; margin: 0 0 12px !important; }
+  .msg.error { color: var(--accent); }
+
+  .spinner { width: 36px; height: 36px; margin: 8px auto 16px; border: 3px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .venue { padding: 16px; margin-bottom: 16px; border: 1px solid var(--line); border-radius: 10px; text-align: left; }
+  .venue strong { display: block; font-size: 1.1rem; }
+  .venue small { color: var(--muted); }
+  .note { font-size: .85rem; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: .8rem; text-align: left; }
+  td, th { padding: 3px 6px; border-bottom: 1px solid var(--line); }
+  [hidden] { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Book a table</h1>
+  <p>Fresh maki and ramen, near you.</p>
+  <button id="book-now" class="btn">Book Now</button>
+</main>
+
+<dialog id="finder" aria-labelledby="finder-title">
+  <div class="sheet">
+    <button class="close" type="button" aria-label="Close">&times;</button>
+
+    <!-- Step 1: ask before the browser does -->
+    <section class="step" data-step="choose">
+      <h2 id="finder-title">Find your nearest Maki &amp; Ramen</h2>
+      <p>We'll take you straight to its booking page.</p>
+      <div class="stack">
+        <button class="btn btn-full" type="button" data-action="use-location">📍 Use my current location</button>
+        <button class="link" type="button" data-action="to-postcode">or enter postcode instead</button>
+      </div>
+    </section>
+
+    <!-- Waiting for location / API -->
+    <section class="step" data-step="loading" hidden>
+      <div class="spinner" aria-hidden="true"></div>
+      <h2 id="loading-text">Finding your location…</h2>
+      <p id="loading-sub">Please allow location access when your browser asks.</p>
+      <button class="link" type="button" data-action="to-postcode" id="loading-skip">Enter postcode instead</button>
+    </section>
+
+    <!-- Postcode fallback -->
+    <section class="step" data-step="postcode" hidden>
+      <h2>Enter your postcode</h2>
+      <p class="msg" id="pc-msg" role="status"></p>
+      <form id="pc-form" novalidate>
+        <input id="postcode" name="postcode" autocomplete="postal-code" placeholder="e.g. M4 1ES" maxlength="10" aria-label="Postcode">
+        <button class="btn" type="submit">Find</button>
+      </form>
+      <button class="link" type="button" data-action="use-location" id="retry-location">← Try my location again</button>
+    </section>
+
+    <!-- Result -->
+    <section class="step" data-step="result" hidden>
+      <h2>Your nearest restaurant</h2>
+      <div class="venue" id="venue"></div>
+      <a class="btn btn-full" id="go" href="#">Continue to booking</a>
+      <p class="note" id="redirect-note" style="margin-top:12px"></p>
+      <button class="link" type="button" data-action="to-postcode">Not right? Search by postcode</button>
+      <div id="debug"></div>
+    </section>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  const DEBUG = <?= $debug ? 'true' : 'false' ?>;
+  const API = 'api/nearest.php';
+  const REDIRECT_DELAY_MS = 2000;
+  const PROMPT_IGNORED_MS = 8000;
+  const UK_POSTCODE = /^[A-Z]{1,2}[0-9][A-Z0-9]?\s*([0-9][A-Z]{2})?$/i;
+
+  const $ = (sel) => document.querySelector(sel);
+  const dialog = $('#finder'), pcInput = $('#postcode'), pcMsg = $('#pc-msg');
+  const geoAvailable = 'geolocation' in navigator && window.isSecureContext;
+
+  let geoToken = 0;          // bumps whenever a pending location answer should be ignored
+  let ignoredTimer = null;
+  let redirectTimer = null;
+  let locationBlocked = false;
+
+  function show(step) {
+    dialog.querySelectorAll('.step').forEach((s) => { s.hidden = s.dataset.step !== step; });
+  }
+
+  function cancelPending() {
+    geoToken++;
+    clearTimeout(ignoredTimer);
+    clearTimeout(redirectTimer);
+  }
+
+  async function permissionState() {
+    try {
+      if (!navigator.permissions) return 'unknown';
+      return (await navigator.permissions.query({ name: 'geolocation' })).state;
+    } catch (e) {
+      return 'unknown';
+    }
+  }
+
+  // --- Open: skip step 1 if the browser already knows the answer ---------------
+  $('#book-now').addEventListener('click', async () => {
+    cancelPending();
+    dialog.showModal();
+
+    if (!geoAvailable) return toPostcode("Location isn't available on this device.");
+    const state = await permissionState();
+    if (state === 'granted') return useLocation();
+    if (state === 'denied') {
+      locationBlocked = true;
+      return toPostcode('Location is turned off for this site.');
+    }
+    show('choose');
+  });
+
+  dialog.querySelector('.close').addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); }); // backdrop tap
+  dialog.addEventListener('close', cancelPending);
+
+  dialog.addEventListener('click', (e) => {
+    const action = e.target.closest('[data-action]')?.dataset.action;
+    if (action === 'use-location') useLocation();
+    if (action === 'to-postcode') { cancelPending(); toPostcode(''); }
+  });
+
+  // --- Location ---------------------------------------------------------------
+  function useLocation() {
+    cancelPending();
+    const token = geoToken;
+    showLoading('Finding your location…', 'Please allow location access when your browser asks.', true);
+
+    // Browser timeouts only start once permission is given, so an ignored prompt
+    // never reports back. Offer the postcode route; a late "Allow" still works.
+    ignoredTimer = setTimeout(() => {
+      if (token === geoToken) toPostcode('Still waiting for location? Enter your postcode instead.');
+    }, PROMPT_IGNORED_MS);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        clearTimeout(ignoredTimer);
+        if (token !== geoToken) return;
+        lookup({ lat: pos.coords.latitude, lng: pos.coords.longitude }, 'location');
+      },
+      (err) => {
+        clearTimeout(ignoredTimer);
+        if (token !== geoToken) return;
+        if (err.code === err.PERMISSION_DENIED) {
+          locationBlocked = true;
+          toPostcode("No problem – we'll use your postcode instead.");
+        } else {
+          toPostcode("We couldn't get your location.", { error: true });
+        }
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+    );
+  }
+
+  // --- Postcode ---------------------------------------------------------------
+  function toPostcode(message, { error = false } = {}) {
+    show('postcode');
+    pcMsg.textContent = message;
+    pcMsg.className = 'msg' + (error ? ' error' : '');
+    $('#retry-location').hidden = !geoAvailable || locationBlocked;
+    pcInput.focus();
+  }
+
+  $('#pc-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const pc = pcInput.value.trim();
+    if (!UK_POSTCODE.test(pc)) {
+      pcMsg.textContent = "That doesn't look like a UK postcode. Try e.g. M4 1ES.";
+      pcMsg.className = 'msg error';
+      pcInput.focus();
+      return;
+    }
+    cancelPending(); // a late location answer must not override the postcode
+    lookup({ postcode: pc }, 'postcode');
+  });
+
+  // --- API + result -----------------------------------------------------------
+  function showLoading(title, sub, allowSkip) {
+    show('loading');
+    $('#loading-text').textContent = title;
+    $('#loading-sub').textContent = sub;
+    $('#loading-skip').hidden = !allowSkip;
+  }
+
+  async function lookup(params, source) {
+    const token = geoToken;
+    showLoading('Finding your nearest restaurant…', '', false);
+    if (DEBUG) params.debug = 1;
+
+    try {
+      const res = await fetch(API + '?' + new URLSearchParams(params), { headers: { Accept: 'application/json' } });
+      const data = await res.json();
+      if (token !== geoToken || !dialog.open) return;
+      if (!data.ok) return toPostcode(data.message || 'Something went wrong. Please try again.', { error: true });
+      showResult(data);
+    } catch (e) {
+      if (token !== geoToken) return;
+      toPostcode('Network problem. Please check your connection and try again.', { error: true });
+    }
+  }
+
+  function showResult(data) {
+    const v = data.venue;
+    show('result');
+
+    const box = $('#venue');
+    box.textContent = '';
+    const name = document.createElement('strong');
+    name.textContent = v.name;
+    const addr = document.createElement('small');
+    addr.textContent = v.address;
+    const dist = document.createElement('div');
+    dist.textContent = v.distance_miles.toFixed(1) + ' miles from ' + data.origin.label;
+    box.append(name, addr, dist);
+
+    if (data.skipped.length) {
+      const s = document.createElement('small');
+      s.style.display = 'block';
+      s.style.marginTop = '6px';
+      s.textContent = 'Closer but no online booking: ' + data.skipped.join(', ');
+      box.appendChild(s);
+    }
+
+    $('#go').href = v.booking_url;
+    const note = $('#redirect-note');
+    $('#debug').textContent = '';
+
+    if (DEBUG) {
+      note.textContent = 'Debug mode – not redirecting.';
+      renderDebug(data);
+      return;
+    }
+    note.textContent = 'Taking you to booking…';
+    redirectTimer = setTimeout(() => window.location.assign(v.booking_url), REDIRECT_DELAY_MS);
+  }
+
+  function renderDebug(data) {
+    const t = document.createElement('table');
+    t.innerHTML = '<tr><th>#</th><th>Venue</th><th>Miles</th><th>URL</th></tr>';
+    data.ranked.forEach((r, i) => {
+      const tr = t.insertRow();
+      [i + 1, r.name, r.distance_miles.toFixed(1), r.bookable ? '✓' : '✗'].forEach((c) => {
+        tr.insertCell().textContent = c;
+      });
+    });
+    $('#debug').appendChild(t);
+  }
+})();
+</script>
+</body>
+</html>
